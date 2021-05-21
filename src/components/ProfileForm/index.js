@@ -206,7 +206,7 @@ const ProfileForm = ({ submit }) => {
           }}
         inputProps={{
           maxLength: 100,
-          minlength: 3,
+          minLength: 3,
         }}
         margin="normal"
         label="Nome"

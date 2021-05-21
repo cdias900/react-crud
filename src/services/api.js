@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 export const usersApi = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: process.env.NODE_ENV === 'development'
+    ? 'http://localhost:8080/api'
+    : 'https://spring-boot-react-crud.herokuapp.com/api',
 });
 
 export const cepApi = axios.create({

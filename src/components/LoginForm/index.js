@@ -23,7 +23,6 @@ const LoginForm = ({ submit }) => {
         variant="outlined"
         value={username}
         onChange={e => setUsername(e.target.value)}
-        maxLength="100"
         required
       />
       <TextField
