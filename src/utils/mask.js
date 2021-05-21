@@ -14,7 +14,7 @@ export function cpfMask(cpf) {
     .replace(/(-\d{2})\d+?$/, '$1');
 }
 
-export function phoneMask(phone) {
+export function mobilePhoneMask(phone) {
   return phone
     .replace(/\D/g, '')
     .replace(/(\d{2})(\d)/, '($1) $2')
@@ -22,3 +22,18 @@ export function phoneMask(phone) {
     .replace(/(\d{4})-(\d)(\d{4})/, '$1$2-$3')
     .replace(/(-\d{4})\d+?$/, '$1')
 }
+
+export function normalPhoneMask(phone) {
+  return phone
+    .replace(/\D/g, '')
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+    .replace(/(-\d{4})\d+?$/, '$1')
+}
+
+export const phoneMasks = {
+  MOBILE: 'Celular',
+  RESIDENTIAL: 'Residencial',
+  COMERCIAL: 'Comercial',
+}
+

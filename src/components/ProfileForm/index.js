@@ -2,19 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { TextField, MenuItem, Button } from '@material-ui/core';
 import Grid from '@material-ui/core/Grid';
 
-import { cepApi, statesApi } from '../../services/api';
-import { cepMask, cpfMask, phoneMask } from '../../utils/mask';
+import { cepApi, statesApi, usersApi } from '../../services/api';
+import {
+  cepMask,
+  cpfMask,
+  mobilePhoneMask,
+  normalPhoneMask,
+  phoneMasks
+} from '../../utils/mask';
 import { isCpfValid } from '../../utils/validation';
 
 import classes from './styles.module.css';
 
 const ProfileForm = ({ submit }) => {
+  const [editPermission, setEditPermission] = useState(false);
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [cep, setCep] = useState('');
-  const [uf, setUf] = useState('');
+  const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [tempCity, setTempCity] = useState('');
+  const [tempState, setTempState] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [address, setAddress] = useState('');
   const [complement, setComplement] = useState('');
@@ -35,48 +43,91 @@ const ProfileForm = ({ submit }) => {
   const [cepError, setCepError] = useState(false);
 
   useEffect(() => {
-    statesApi.get()
-      .then(res => {
-        const stateList = res.data.map(s => ({ state: s.nome, uf: s.sigla }));
-        setStates(stateList.sort((a, b) => {
-          if(a.uf < b.uf) return -1;
-          if(a.uf > b.uf) return 1;
-          return 0;
-        }));
+    let mounted = true;
+    const userId = localStorage.getItem('userId');
+    if(!userId) return;
+    usersApi.get(`/users/${userId}`)
+      .then((res) => {
+        if(mounted) {
+          setEditPermission(res.data.editPermission || false);
+          setName(res.data.name);
+          setCpf(cpfMask(res.data.cpf));
+          setCep(cepMask(res.data.cep));
+          setTempState(res.data.state);
+          setTempCity(res.data.city);
+          setNeighborhood(res.data.neighborhood);
+          setAddress(res.data.address);
+          setComplement(res.data.complement || '');
+          setPhones(res.data.phones.map(p => ({
+            type: p.type,
+            number: p.type === phoneMasks.MOBILE ? mobilePhoneMask(p.number) : normalPhoneMask(p.number)
+          })));
+          setEmails(res.data.emails);
+        }
       })
-      .catch(err => console.log(err));
+      .catch((err) => console.log(err));
+      return () => { mounted = false; }
   }, []);
 
   useEffect(() => {
-    setCity('');
-    setCities([]);
-    if(!uf || uf === '') return;
-    statesApi.get(`/${uf}/municipios`)
-      .then(res => setCities(res.data.map(c => ({ id: c.id, city: c.nome }))))
+    let mounted = true;
+    statesApi.get()
+      .then(res => {
+        if(mounted) {
+          const stateList = res.data.map(s => ({ stateName: s.nome, state: s.sigla }));
+          setStates(stateList.sort((a, b) => {
+            if(a.state < b.state) return -1;
+            if(a.state > b.state) return 1;
+            return 0;
+          }));
+        }
+      })
       .catch(err => console.log(err));
-  }, [uf])
+    return () => { mounted = false; }
+  }, []);
 
   useEffect(() => {
-    if(tempCity === '' || (tempCity !== '' && cities.length === 0)) return;
+    if(tempState === ''
+    || (tempState !== '' && states.length === 0)) return;
+    setState(tempState);
+    setTempState('');
+  }, [states, tempState]);
+
+  useEffect(() => {
+    let mounted = true;
+    setCity('');
+    setCities([]);
+    if(!state || state === '') return;
+    statesApi.get(`/${state}/municipios`)
+      .then(res => {
+        if(mounted) setCities(res.data.map(c => ({ id: c.id, city: c.nome })));
+      })
+      .catch(err => console.log(err));
+    return () => { mounted = false; }
+  }, [state])
+
+  useEffect(() => {
+    if(tempCity === ''
+    || (tempCity !== '' && cities.length === 0)) return;
     setCity(tempCity);
     setTempCity('');
   }, [cities, tempCity])
 
-  useEffect(() => {
+  const searchCep = () => {
     const cleanCep = cep.replace(/-/g, '');
-    if(cleanCep.length !== 8) return;
+    if(cleanCep.length !== 8) return setCepError(true);
     cepApi.get(`/${cep}/json`)
       .then(res => {
         if(res.data.erro) return setCepError(true);
         setCepError(false);
-        setUf(res.data.uf);
+        setState(res.data.uf);
         setTempCity(res.data.localidade);
         setNeighborhood(res.data.bairro);
         setAddress(res.data.logradouro);
         setComplement(res.data.complemento);
       })
       .catch(err => console.log(err));
-  }, [cep])
+  }
 
   const handlePhoneChange = (index, phone) => {
     setPhones(prevState => prevState.map((p, i) => {
@@ -129,7 +180,7 @@ const ProfileForm = ({ submit }) => {
       name,
       cpf: cpf.replace(/[-.]/g, ''),
       cep: cep.replace(/-/g, ''),
-      uf,
+      state,
       city,
       neighborhood,
       address,
@@ -142,6 +193,9 @@ const ProfileForm = ({ submit }) => {
   return (
     <form className={classes.form} onSubmit={handleSubmit}>
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="Nome"
         variant="outlined"
@@ -150,6 +204,9 @@ const ProfileForm = ({ submit }) => {
         required
       />
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="CPF"
         variant="outlined"
@@ -161,29 +218,39 @@ const ProfileForm = ({ submit }) => {
         required
       />
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="CEP"
         variant="outlined"
         value={cep}
         onChange={e => setCep(cepMask(e.target.value))}
+        onBlur={searchCep}
         error={cepError}
         helperText={cepError && "CEP Inválido!"}
         required
       />
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="UF"
         variant="outlined"
-        value={uf}
-        onChange={e => setUf(e.target.value)}
+        value={state}
+        onChange={e => setState(e.target.value)}
         select
         required
       >
         {states.map(s => (
-          <MenuItem key={s.uf} value={s.uf}>{s.state}</MenuItem>
+          <MenuItem key={s.state} value={s.state}>{s.stateName}</MenuItem>
         ))}
       </TextField>
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="Cidade"
         variant="outlined"
@@ -197,6 +264,9 @@ const ProfileForm = ({ submit }) => {
         ))}
       </TextField>
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="Bairro"
         variant="outlined"
@@ -205,6 +275,9 @@ const ProfileForm = ({ submit }) => {
         required
       />
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="Logradouro"
         variant="outlined"
@@ -213,6 +286,9 @@ const ProfileForm = ({ submit }) => {
         required
       />
       <TextField
+        InputProps={{
+            readOnly: !editPermission,
+          }}
         margin="normal"
         label="Complemento"
         variant="outlined"
@@ -227,7 +303,7 @@ const ProfileForm = ({ submit }) => {
             variant="contained"
             color="secondary"
             onClick={removePhone}
-            disabled={phones.length < 2}
+            disabled={phones.length < 2 || !editPermission}
           >Remover Telefone</Button>
         </Grid>
         <Grid item xs={2}>
@@ -236,6 +312,7 @@ const ProfileForm = ({ submit }) => {
             variant="contained"
             color="primary"
             onClick={addPhone}
+            disabled={!editPermission}
           >Adicionar Telefone</Button>
         </Grid>
       </Grid>
@@ -243,6 +320,9 @@ const ProfileForm = ({ submit }) => {
         <Grid container spacing={3} key={i}>
           <Grid item xs={2}>
             <TextField
+              InputProps={{
+            readOnly: !editPermission,
+          }}
               className={classes.gridInput}
               margin="normal"
               label="Tipo de Telefone"
@@ -252,19 +332,25 @@ const ProfileForm = ({ submit }) => {
               select
               required
             >
-              <MenuItem value="Celular">Celular</MenuItem>
-              <MenuItem value="Residencial">Residencial</MenuItem>
-              <MenuItem value="Comercial">Comercial</MenuItem>
+              {Object.values(phoneMasks).map(item => (
+                <MenuItem key={item} value={item}>{item}</MenuItem>
+              ))}
             </TextField>
           </Grid>
           <Grid item xs={10}>
             <TextField
+              InputProps={{
+            readOnly: !editPermission,
+          }}
               className={classes.gridInput}
               margin="normal"
               label="Telefone"
               variant="outlined"
               value={p.number}
-              onChange={e => handlePhoneChange(i, { type: p.type, number: phoneMask(e.target.value) })}
+              onChange={(e) => handlePhoneChange(i, {
+                type: p.type,
+                number: p.type === phoneMasks.MOBILE ? mobilePhoneMask(e.target.value) : normalPhoneMask(e.target.value)
+              })}
               required
             />
           </Grid>
@@ -278,7 +364,7 @@ const ProfileForm = ({ submit }) => {
             variant="contained"
             color="secondary"
             onClick={removeEmail}
-            disabled={emails.length < 2}
+            disabled={emails.length < 2 || !editPermission}
           >Remover Email</Button>
         </Grid>
         <Grid item xs={2}>
@@ -287,11 +373,15 @@ const ProfileForm = ({ submit }) => {
             variant="contained"
             color="primary"
             onClick={addEmail}
+            disabled={!editPermission}
           >Adicionar Email</Button>
         </Grid>
       </Grid>
       {emails.map((e, i) => (
         <TextField
+          InputProps={{
+            readOnly: !editPermission,
+          }}
           key={i}
           type="email"
           margin="normal"

@@ -9,5 +9,5 @@ export const cepApi = axios.create({
 });
 
 export const statesApi = axios.create({
-  baseURL: 'https://servicodados.ibge.gov.br/api/v1/localidades/estados'
+  baseURL: 'https://servicodados.ibge.gov.br/api/v1/localidades/estados',
 });
