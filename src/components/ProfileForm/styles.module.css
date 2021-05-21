@@ -1,0 +1,14 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  margin: 16px 0 24px;
+}
+
+.gridInput {
+  width: 100%;
+}
+
+.submitButton {
+  width: 60%;
+  align-self: center;
+}
