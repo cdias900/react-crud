@@ -39,7 +39,7 @@ const LoginForm = ({ submit }) => {
         variant="contained"
         color="primary"
         type="submit"
-      >Salvar</Button>
+      >Fazer Login</Button>
     </form>
   )
 }
