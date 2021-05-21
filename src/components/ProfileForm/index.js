@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, MenuItem, Button } from '@material-ui/core';
 import Grid from '@material-ui/core/Grid';
+import { useHistory } from 'react-router-dom';
 
 import { cepApi, statesApi, usersApi } from '../../services/api';
 import {
   cepMask,
   cpfMask,
+  nameMask,
   mobilePhoneMask,
   normalPhoneMask,
   phoneMasks
@@ -15,6 +17,7 @@ import { isCpfValid } from '../../utils/validation';
 import classes from './styles.module.css';
 
 const ProfileForm = ({ submit }) => {
+  const history = useHistory();
   const [editPermission, setEditPermission] = useState(false);
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
@@ -45,8 +48,13 @@ const ProfileForm = ({ submit }) => {
   useEffect(() => {
     let mounted = true;
     const userId = localStorage.getItem('userId');
-    if(!userId) return;
-    usersApi.get(`/users/${userId}`)
+    const token = localStorage.getItem('token');
+    if(!userId || !token) history.push('/login');
+    usersApi.get(`/users/${userId}`, {
+      headers: {
+        Authorization: token,
+      },
+    })
       .then((res) => {
         if(mounted) {
           setEditPermission(res.data.editPermission || false);
@@ -67,7 +75,7 @@ const ProfileForm = ({ submit }) => {
       })
       .catch((err) => console.log(err));
       return () => { mounted = false; }
-  }, []);
+  }, [history]);
 
   useEffect(() => {
     let mounted = true;
@@ -196,11 +204,15 @@ const ProfileForm = ({ submit }) => {
         InputProps={{
             readOnly: !editPermission,
           }}
+        inputProps={{
+          maxLength: 100,
+          minlength: 3,
+        }}
         margin="normal"
         label="Nome"
         variant="outlined"
         value={name}
-        onChange={e => setName(e.target.value)}
+        onChange={e => setName(nameMask(e.target.value))}
         required
       />
       <TextField

@@ -10,14 +10,19 @@ const Login = () => {
   const history = useHistory();
 
   const handleSubmit = (info) => {
-    console.log(info)
     usersApi.post('/auth/login', info)
       .then(res => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('userId', res.data.user.id);
-        history.push('/profile')
+        history.push('/profile');
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        console.log(err);
+        if(err.response && err.response.status !== 500)
+          alert('Usuário ou senha inválidos.');
+        else
+          alert('Falha ao realizar login.');
+      });
   }
   return (
     <Container maxWidth="lg">

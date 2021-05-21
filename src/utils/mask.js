@@ -14,6 +14,12 @@ export function cpfMask(cpf) {
     .replace(/(-\d{2})\d+?$/, '$1');
 }
 
+export function nameMask(name) {
+  console.log(name);
+  return name
+    .replace(/[^\w\d\s]á-úà-Ú*$/g, '');
+}
+
 export function mobilePhoneMask(phone) {
   return phone
     .replace(/\D/g, '')
