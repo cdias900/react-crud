@@ -15,9 +15,8 @@ export function cpfMask(cpf) {
 }
 
 export function nameMask(name) {
-  console.log(name);
   return name
-    .replace(/[^\w\d\s]á-úà-Ú*$/g, '');
+    .replace(/[\w\d\s]á-úà-Ú*$/g, '');
 }
 
 export function mobilePhoneMask(phone) {

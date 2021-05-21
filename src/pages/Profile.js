@@ -25,6 +25,7 @@ const Profile = () => {
       })
       .catch(err => {
         alert('Falha ao atualizar dados.');
+        if(err.response && err.response.status === 401) history.push('/login');
         console.log(err);
       });
   }

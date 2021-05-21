@@ -73,7 +73,10 @@ const ProfileForm = ({ submit }) => {
           setEmails(res.data.emails);
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        if(err.response && err.response.status === 401) history.push('/login');
+        console.log(err);
+      });
       return () => { mounted = false; }
   }, [history]);
 
@@ -409,7 +412,7 @@ const ProfileForm = ({ submit }) => {
         variant="contained"
         color="primary"
         type="submit"
-        disabled={cpfError || cepError}
+        disabled={cpfError || cepError || !editPermission}
       >Salvar</Button>
     </form>
   );
